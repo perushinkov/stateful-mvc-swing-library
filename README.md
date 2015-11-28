@@ -25,148 +25,144 @@
 <pre>
 package example;
 
-import ...;
+...;
 
 /**
  * State machine:
- *
+ * <p/>
  * (start)    -------------------> SUBPAGE_A
  * SUBPAGE_A/B----(SUBPAGE_C)----> SUBPAGE_C
  * SUBPAGE_A/C----(SUBPAGE_B)----> SUBPAGE_B
  * SUBPAGE_B/C----(SUBPAGE_A)----> SUBPAGE_A
  * (SUBPAGE_A,
- *  SUBPAGE_B,
- *  SUBPAGE_C)  ----(LOGOUT/EXIT)---> (end)
- * 
+ * SUBPAGE_B,
+ * SUBPAGE_C)  ----(LOGOUT/EXIT)---> (end)
+ * <p/>
  * children: SUBPAGE_A, SUBPAGE_B, SUBPAGE_C
- * 
  */
 public class Switcher extends MVCView {
-	private static final long serialVersionUID = 1L;
-	
-	// STATES
-	public final static int ST_SUBPAGE_A = 0;
-	public final static int ST_SUBPAGE_B = 1;
-	public final static int ST_SUBPAGE_C = 2;
+    private static final long serialVersionUID = 1L;
 
-  // TRANSITIONS/ACTIONS
-	public final static int A_SUBPAGE_A = 0;
-	public final static int A_SUBPAGE_B = 1;
-	public final static int A_SUBPAGE_C = 2;
-	
-	public final static int A_LOGOUT = 3;
-	public final static int A_EXIT = 4;
+    // STATES
+    public final static int ST_SUBPAGE_A = 0;
+    public final static int ST_SUBPAGE_B = 1;
+    public final static int ST_SUBPAGE_C = 2;
 
-	private JComboBox<String> cmdsCombo;
-	private JButton logoutBtn;
+    // TRANSITIONS/ACTIONS
+    public final static int A_SUBPAGE_A = 0;
+    public final static int A_SUBPAGE_B = 1;
+    public final static int A_SUBPAGE_C = 2;
 
-	private JButton forceLogoutBtn;
-	private JPanel cmdPageHolder;
-	
-	private MVCView childView;
-	
-	private String[] switchables = new String[] {"Subpage A", "Subpage B", "Subpage C"};
-	
-	public Switcher(MVCView parent, RootModel model) {
-		super(parent, model);
-		CSS.panel(this);
-		
-		this.state = ST_SUBPAGE_A;
-		
-		// Defining components before including them in UI trees
-		cmdsCombo = SwingFactory.createCombo(switchables);
-		logoutBtn = SwingFactory.createButton("Log out");
-		forceLogoutBtn = SwingFactory.createButton("Log out forcefully");
-		childView = new SubpageA(this, model);
-		cmdPageHolder = SwingFactory.createYSequence(childView);
-		
-		this.add(
-			SwingFactory.createYSequence(
-				SwingFactory.createXSequence(
-					cmdsCombo
-					, logoutBtn
-					, forceLogoutBtn
-				), cmdPageHolder
-			)
-		);
-		registerEvents();
-	}
-	
-	@Override
-	public void registerEvents() {
-		logoutBtn.addActionListener( (e) -> {
-			if (childView.isBlocking()) {
-				JOptionPane.showMessageDialog(null, "Cannot logout during operation!");
-			} else {
-				parent.transition(Master.A_LOGOUT);
-				new Thread(() -> {
-			     try {
-			        rootModel.cancel();
-			        rootModel.shutdown();
-			      } catch (Exception ex) {
-			        SwingUtil.alert(ex.getMessage());
-			      }
-				}).start();				
-			}
-		});
-		
-		forceLogoutBtn.addActionListener((e) -> {
-			parent.transition(Master.A_LOGOUT);
-			try {
-			  rootModel.cancel();
-			  rootModel.shutdown();
-			} catch (Exception ex) {
-			  SwingUtil.alert(ex.getMessage());
-			}
-			
-		});
-		
-		
-		cmdsCombo.addActionListener((e) -> {
-			String selected = cmdsCombo.getSelectedItem().toString();
-			String current = childView.getClass().getSimpleName();
-			if (selected.equals(current)) {
-				JOptionPane.showMessageDialog(null, "You are already at " + current);
-			} else if (childView.getState() != 0) {
-				JOptionPane.showMessageDialog(null, "Cannot switch views during operation!");
-			} else {
-				int transitionValue = Arrays.asList(switchables).indexOf(selected);
-				transition(transitionValue);				
-			}
-		});
-	}
-	
-	public synchronized boolean transition(int transitionCode) {
-		switch (transitionCode) {
-		case A_SUBPAGE_A:
-			childView = new SubpageA(this, rootModel);
-			break;
-		case A_SUBPAGE_B:
-			childView = new SubpageB(this, rootModel);
-			break;
-		case A_SUBPAGE_C:
-			try {
-        childView = new SubpageC(this, rootModel);
-      } catch (Exception e) {
-        SwingUtil.alert("Failed to instantiate export table.\r\n" + e.getMessage());
-      }
-			break;
-		default:
-			JOptionPane.showMessageDialog(null, "Illegal transition");
-			return false;
-		}
-		
-		cmdPageHolder.removeAll();
-		cmdPageHolder.add(childView);
-		revalidate();
-		repaint();
-		return true;
-	}
+    public final static int A_LOGOUT = 3;
+    public final static int A_EXIT = 4;
 
-	public int getState() {
-		return state;
-	}
+    private JComboBox<String> cmdsCombo;
+    private JButton logoutBtn;
+
+    private JButton forceLogoutBtn;
+    private JPanel cmdPageHolder;
+
+    private MVCView childView;
+
+    private String[] switchables = new String[]{"Subpage A", "Subpage B", "Subpage C"};
+
+    public Switcher(MVCView parent, RootModel model) {
+        super(parent, model);
+        CSS.panel(this);
+
+        this.state = ST_SUBPAGE_A;
+
+        // Defining components before including them in UI trees
+        cmdsCombo = SwingFactory.createCombo(switchables);
+        logoutBtn = SwingFactory.createButton("Log out");
+        forceLogoutBtn = SwingFactory.createButton("Log out forcefully");
+        childView = new SubpageA(this, model);
+        cmdPageHolder = SwingFactory.createYSequence(childView);
+
+        this.add(
+                SwingFactory.createYSequence(
+                        SwingFactory.createXSequence(
+                                cmdsCombo
+                                , logoutBtn
+                                , forceLogoutBtn
+                        ), cmdPageHolder
+                )
+        );
+        registerEvents();
+    }
+
+    @Override
+    public void registerEvents() {
+        logoutBtn.addActionListener((e) -> {
+            if (childView.isBlocking()) {
+                JOptionPane.showMessageDialog(null, "Cannot logout during operation!");
+            } else {
+                parent.transition(Master.A_LOGOUT);
+                new Thread(() -> {
+                    try {
+                        rootModel.cancel();
+                        rootModel.shutdown();
+                    } catch (Exception ex) {
+                        SwingUtil.alert(ex.getMessage());
+                    }
+                }).start();
+            }
+        });
+
+        forceLogoutBtn.addActionListener((e) -> {
+            parent.transition(Master.A_LOGOUT);
+            try {
+                rootModel.cancel();
+                rootModel.shutdown();
+            } catch (Exception ex) {
+                SwingUtil.alert(ex.getMessage());
+            }
+
+        });
+
+
+        cmdsCombo.addActionListener((e) -> {
+            String selected = cmdsCombo.getSelectedItem().toString();
+            String current = childView.getClass().getSimpleName();
+            if (selected.equals(current)) {
+                JOptionPane.showMessageDialog(null, "You are already at " + current);
+            } else if (childView.getState() != 0) {
+                JOptionPane.showMessageDialog(null, "Cannot switch views during operation!");
+            } else {
+                int transitionValue = Arrays.asList(switchables).indexOf(selected);
+                transition(transitionValue);
+            }
+        });
+    }
+
+    public synchronized boolean transition(int transitionCode) {
+        switch (transitionCode) {
+            case A_SUBPAGE_A:
+                childView = new SubpageA(this, rootModel);
+                break;
+            case A_SUBPAGE_B:
+                childView = new SubpageB(this, rootModel);
+                break;
+            case A_SUBPAGE_C:
+                childView = new SubpageC(this, rootModel);
+                break;
+            default:
+                JOptionPane.showMessageDialog(null, "Illegal transition");
+                return false;
+        }
+
+        cmdPageHolder.removeAll();
+        cmdPageHolder.add(childView);
+        revalidate();
+        repaint();
+        return true;
+    }
+
+    public int getState() {
+        return state;
+    }
 }
+
 
 </pre>
 
