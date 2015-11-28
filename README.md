@@ -23,9 +23,31 @@
 
 <p>Here is a preview of what an example view implementation looks like:<p>
 <pre>
+/*
+  This view serves as a switcher between 3 different subviews. It also offers a Logout, and force Logout button.
+  It communicates with both its subviews and its parent view.
+*/
 package example;
 
-...;
+
+/**
+ * Each MVCView represents a state graph. 
+ * The graph consists of states and transitions between them.
+ * The view must know its current state and should be able to
+ * transition based on a transitionCode.
+ * 
+ * Each MVCView can hold other MVCViews and can delegate events 
+ * both to its parent and to its children. For instance:
+ * 		On A_LOGIN event the Login view tells its parent the 
+ * 		Master view to replace it with a Switcher view.
+ * 
+ * The state graph of each view is placed before its class.
+ * 
+ * Depending on how they're made, certain views can be instantiated 
+ * more than once and used by other views without needing knowledge 
+ * of them.
+ *
+ */
 
 /**
  * State machine:
@@ -52,7 +74,6 @@ public class Switcher extends MVCView {
     public final static int A_SUBPAGE_A = 0;
     public final static int A_SUBPAGE_B = 1;
     public final static int A_SUBPAGE_C = 2;
-
     public final static int A_LOGOUT = 3;
     public final static int A_EXIT = 4;
 
@@ -73,11 +94,14 @@ public class Switcher extends MVCView {
         this.state = ST_SUBPAGE_A;
 
         // Defining components before including them in UI trees
+
         cmdsCombo = SwingFactory.createCombo(switchables);
         logoutBtn = SwingFactory.createButton("Log out");
         forceLogoutBtn = SwingFactory.createButton("Log out forcefully");
         childView = new SubpageA(this, model);
         cmdPageHolder = SwingFactory.createYSequence(childView);
+
+        // Defining UI tree. (It gets more beautiful with more components, since it remains pretty and readable)
 
         this.add(
                 SwingFactory.createYSequence(
@@ -91,24 +115,46 @@ public class Switcher extends MVCView {
         registerEvents();
     }
 
+    /**
+  	 * The Controller
+  	 * 
+  	 * Holds the definitions of the event-handlers.
+  	 * Communicates with the MVCModel singleton,
+  	 * and should change the current view state only
+  	 * by calls to transition(int transitionCode)
+  	 */
     @Override
     public void registerEvents() {
+        /* 
+         * Upon logout-btn-click an attempt is made to stop subview.
+         * If unsuccessful, an alert is shown, else logout transition is invoked
+         * in parent view.
+         */
         logoutBtn.addActionListener((e) -> {
+            /**
+             * If a view is currently blocking, it means the user cannot
+             * navigate away from it. (Perhaps because a vital operation is in progress)
+             */
             if (childView.isBlocking()) {
                 JOptionPane.showMessageDialog(null, "Cannot logout during operation!");
             } else {
+                // Now it's parent's responsibility to destroy switcher view and replace it with perhaps login screen?
                 parent.transition(Master.A_LOGOUT);
                 new Thread(() -> {
                     try {
                         rootModel.cancel();
                         rootModel.shutdown();
                     } catch (Exception ex) {
+                        // Never allow exceptions in Swing Event-thread!
                         SwingUtil.alert(ex.getMessage());
                     }
                 }).start();
             }
         });
 
+        /* 
+         * Similar to logoutbtn handler, but does not care if subpage view is currently doing something important.
+         */
         forceLogoutBtn.addActionListener((e) -> {
             parent.transition(Master.A_LOGOUT);
             try {
@@ -117,16 +163,22 @@ public class Switcher extends MVCView {
             } catch (Exception ex) {
                 SwingUtil.alert(ex.getMessage());
             }
-
         });
 
-
+        /**
+         * Fetches requested view name, then fetches name of currently active view.
+         * If we are already at the desired view, a suitable popup informs the user,
+         * Else an attempt at navigation is made. (This is only possible if child view
+         * is not in the middle of a blocking operation.)
+         *
+         * It's considered a good practice to modify the current view only via transition calls.
+         */
         cmdsCombo.addActionListener((e) -> {
             String selected = cmdsCombo.getSelectedItem().toString();
             String current = childView.getClass().getSimpleName();
             if (selected.equals(current)) {
                 JOptionPane.showMessageDialog(null, "You are already at " + current);
-            } else if (childView.getState() != 0) {
+            } else if (childView.isBlocking()) {
                 JOptionPane.showMessageDialog(null, "Cannot switch views during operation!");
             } else {
                 int transitionValue = Arrays.asList(switchables).indexOf(selected);
@@ -134,7 +186,11 @@ public class Switcher extends MVCView {
             }
         });
     }
-
+    
+    /**
+     * Using its current state and the given transition,
+     * the view must move to new UI state
+     */ 
     public synchronized boolean transition(int transitionCode) {
         switch (transitionCode) {
             case A_SUBPAGE_A:
