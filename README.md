@@ -22,7 +22,7 @@
 </ul>
 
 <p>Here is a preview of what an example view implementation looks like:<p>
-<a href="https://github.com/perushinkov/stateful-mvc-swing-library/blob/master/src/main/java/perushinkov/swinglib/model/PairEditorTableModel.jhttps://github.com/perushinkov/stateful-mvc-swing-library/blob/master/example.java">Example Java</a>
+<a href="https://github.com/perushinkov/stateful-mvc-swing-library/blob/master/example.java">Example Java</a>
 
 NOTE:
 I've created a sizeable Swing application using this library, which I won't be able
