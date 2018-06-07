@@ -22,7 +22,7 @@
 </ul>
 
 <p>Here is a preview of what an example view implementation looks like:<p>
-<pre>
+```java
 /*
   This view serves as a switcher between 3 different subviews. It also offers a Logout, and force Logout button.
   It communicates with both its subviews and its parent view.
@@ -220,7 +220,7 @@ public class Switcher extends MVCView {
 }
 
 
-</pre>
+```
 
 NOTE:
 I've created a sizeable Swing application using this library, which I won't be able
